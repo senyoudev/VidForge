@@ -15,32 +15,8 @@ yarn-error.log*
 # Environment variables
 .env
 
-# Optional: Operating system or editor-specific files
-.DS_Store  # macOS
-Thumbs.db  # Windows
-.vscode/   # VSCode
+# Test video
+assets/s3_test_video.mp4
 
-# Optional: Build files or compiled code
-dist/
-build/
-
-# Coverage directory used by testing tools
-coverage/
-
-# Optional: Temporary files
-tmp/
-temp/
-
-# Optional: If you use TypeScript
-*.tsbuildinfo
-
-# Optional: If you use Next.js or similar frameworks
-.next/
-out/
-
-# Optional: If you use ESLint
-.eslintcache
-
-# Optional: If you use Docker
-docker-compose.yml
-Dockerfile
+# Ds_Store files
+.DS_Store
