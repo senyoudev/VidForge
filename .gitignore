@@ -1,0 +1,46 @@
+# Node.js dependencies
+node_modules/
+# Optional: if you use npm:
+package-lock.json
+# Optional: if you use yarn:
+yarn.lock
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+
+# Optional: Operating system or editor-specific files
+.DS_Store  # macOS
+Thumbs.db  # Windows
+.vscode/   # VSCode
+
+# Optional: Build files or compiled code
+dist/
+build/
+
+# Coverage directory used by testing tools
+coverage/
+
+# Optional: Temporary files
+tmp/
+temp/
+
+# Optional: If you use TypeScript
+*.tsbuildinfo
+
+# Optional: If you use Next.js or similar frameworks
+.next/
+out/
+
+# Optional: If you use ESLint
+.eslintcache
+
+# Optional: If you use Docker
+docker-compose.yml
+Dockerfile
