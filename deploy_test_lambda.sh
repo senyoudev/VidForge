@@ -8,13 +8,15 @@ ZIP_FILE="process-video-lambda.zip"
 HANDLER="src/handlers/videoProcessor.handler"
 RUNTIME="nodejs18.x"
 ROLE_ARN="arn:aws:iam::000000000000:role/lambda-role"
+LAYER_NAME="ffmpeg-layer"
+LAYER_ARN="arn:aws:lambda:us-east-1:000000000000:layer:$LAYER_NAME:1"  # Update this with your actual Layer ARN
 
 # Step 1: Install dependencies and zip the Lambda function
 echo "Installing dependencies..."
 npm install
 
 echo "Creating zip package for Lambda..."
-zip -r $ZIP_FILE . -x "*.git*" "*.DS_Store*" "*.env"
+zip -r $ZIP_FILE . -x "*.git*" "*.DS_Store*" "*.env" "ffmpeg*" "assets/*"
 
 # Step 2: Check if the Lambda function already exists
 EXISTS=$(awslocal lambda list-functions | grep $LAMBDA_FUNCTION_NAME)
@@ -27,7 +29,8 @@ if [ -z "$EXISTS" ]; then
       --runtime $RUNTIME \
       --handler $HANDLER \
       --zip-file fileb://$ZIP_FILE \
-      --role $ROLE_ARN
+      --role $ROLE_ARN \
+      --layers $LAYER_ARN
 else
     echo "Updating Lambda function $LAMBDA_FUNCTION_NAME..."
     awslocal lambda update-function-code \
@@ -35,14 +38,28 @@ else
       --zip-file fileb://$ZIP_FILE
 fi
 
-# Step 4: Ensure S3 bucket is created
+# Step 4: Check if the FFmpeg layer is attached to the Lambda function
+echo "Checking if FFmpeg layer is attached to $LAMBDA_FUNCTION_NAME..."
+LAYER_ATTACHED=$(awslocal lambda get-function-configuration \
+  --function-name $LAMBDA_FUNCTION_NAME | grep $LAYER_NAME)
+
+if [ -z "$LAYER_ATTACHED" ]; then
+    echo "Attaching FFmpeg layer to Lambda function..."
+    awslocal lambda update-function-configuration \
+      --function-name $LAMBDA_FUNCTION_NAME \
+      --layers $LAYER_ARN
+else
+    echo "FFmpeg layer is already attached."
+fi
+
+# Step 5: Ensure S3 bucket is created
 BUCKET_EXISTS=$(awslocal s3api list-buckets | grep $S3_BUCKET_NAME)
 if [ -z "$BUCKET_EXISTS" ]; then
     echo "Creating S3 bucket $S3_BUCKET_NAME..."
     awslocal s3api create-bucket --bucket $S3_BUCKET_NAME
 fi
 
-# Step 5: Set up the S3 trigger for Lambda function
+# Step 6: Set up the S3 trigger for Lambda function
 echo "Configuring S3 bucket to trigger Lambda function on upload..."
 awslocal s3api put-bucket-notification-configuration \
   --bucket $S3_BUCKET_NAME \
@@ -55,7 +72,7 @@ awslocal s3api put-bucket-notification-configuration \
     ]
   }'
 
-# Step 6: Upload the video to S3 using Node.js script
+# Step 7: Upload the video to S3 using Node.js script
 echo "Uploading video $VIDEO_FILE_PATH to S3..."
 node ./scripts/upload-video.js $VIDEO_FILE_PATH $S3_BUCKET_NAME
 

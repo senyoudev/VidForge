@@ -26,3 +26,6 @@ commands.txt
 
 # ffmpeg files
 ffmpeg*
+
+# lambda zip files
+*.zip
