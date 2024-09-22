@@ -1,5 +1,5 @@
 import configureS3 from "../../utils/configureS3.js";
-import { GetObjectCommand } from '@aws-sdk/client-s3';
+import { GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { createWriteStream } from 'fs';
 import { Readable, pipeline as streamPipeline } from "stream";
 import { promisify } from 'util';
@@ -12,8 +12,6 @@ import path from 'path';
 
 
 
-const thumbnailsDir = '/tmp/thumbnails';
-await fsPromises.mkdir(thumbnailsDir, { recursive: true });
 
 /**
  * Lambda function that processes an S3 event.
@@ -21,9 +19,11 @@ await fsPromises.mkdir(thumbnailsDir, { recursive: true });
  */
 export const handler = async (event) => {
     console.log('Receieved S3 event:', JSON.stringify(event, null, 2));
+    // The directory where we will store the thumbnails
+    const thumbnailsDir = '/tmp/thumbnails';
+    await fsPromises.mkdir(thumbnailsDir, { recursive: true });
     ffmpeg.setFfmpegPath('/opt/ffmpeg-layer/bin/ffmpeg');
     ffmpeg.setFfprobePath('/opt/ffmpeg-layer/bin/ffprobe');
-
     // Check if the event contains the 'Records' array and that it's not empty
     if (!event.Records || event.Records.length === 0) {
         console.error("Error: S3 event does not contain any records.");
@@ -93,8 +93,10 @@ export const handler = async (event) => {
         await fsPromises.unlink(filePath);
         await fsPromises.unlink(thumbnailPath);
 
-        // TODO : Delete the video file from S3
-        console.log('File deleted successfully:', filePath);
+        // Delete the video from S3
+        const deleteParams = { Bucket: bucketName, Key: key };
+        await s3Client.send(new DeleteObjectCommand(deleteParams));
+        console.log(`Video ${key} deleted successfully from S3.`);
 
     } catch (error) {
         console.error('Error processing S3 event:', error);
