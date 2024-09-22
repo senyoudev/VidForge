@@ -20,3 +20,6 @@ assets/s3_test_video.mp4
 
 # Ds_Store files
 .DS_Store
+
+# Files used for local development
+commands.txt

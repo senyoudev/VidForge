@@ -14,8 +14,8 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@aws-sdk/client-lambda": "^3.656.0",
     "@aws-sdk/client-s3": "^3.654.0",
-    "aws-sdk": "^2.1691.0",
     "dotenv": "^16.4.5",
     "mime-types": "^2.1.35"
   }
