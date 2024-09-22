@@ -23,3 +23,6 @@ assets/s3_test_video.mp4
 
 # Files used for local development
 commands.txt
+
+# ffmpeg files
+ffmpeg*
