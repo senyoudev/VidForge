@@ -1,16 +1,19 @@
 import configureS3 from "../../utils/configureS3.js";
-import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
-import { createWriteStream, unlink } from 'fs';
+import { GetObjectCommand } from '@aws-sdk/client-s3';
+import { createWriteStream } from 'fs';
 import { Readable, pipeline as streamPipeline } from "stream";
 import { promisify } from 'util';
 import { promises as fsPromises } from 'fs';
 const pipeline = promisify(streamPipeline);
 import ffmpeg from 'fluent-ffmpeg';
+import { Upload } from '@aws-sdk/lib-storage';
+import path from 'path';
 
 
-ffmpeg.setFfmpegPath('/opt/bin/ffmpeg');
-ffmpeg.setFfprobePath('/opt/bin/ffprobe');
 
+
+const thumbnailsDir = '/tmp/thumbnails';
+await fsPromises.mkdir(thumbnailsDir, { recursive: true });
 
 /**
  * Lambda function that processes an S3 event.
@@ -18,15 +21,10 @@ ffmpeg.setFfprobePath('/opt/bin/ffprobe');
  */
 export const handler = async (event) => {
     console.log('Receieved S3 event:', JSON.stringify(event, null, 2));
-    // TODO : Remove this part below as it is only for testing purposes
-      try {
-        const ffmpegExists = await fs.access('/opt/bin/ffmpeg');
-        const ffprobeExists = await fs.access('/opt/bin/ffprobe');
-        console.log('ffmpeg and ffprobe are accessible.');
-    } catch (error) {
-        console.error('ffmpeg or ffprobe not found in /opt/bin:', error);
-    }
-     // Check if the event contains the 'Records' array and that it's not empty
+    ffmpeg.setFfmpegPath('/opt/ffmpeg-layer/bin/ffmpeg');
+    ffmpeg.setFfprobePath('/opt/ffmpeg-layer/bin/ffprobe');
+
+    // Check if the event contains the 'Records' array and that it's not empty
     if (!event.Records || event.Records.length === 0) {
         console.error("Error: S3 event does not contain any records.");
         return;
@@ -61,14 +59,15 @@ export const handler = async (event) => {
 
         // TODO : Process the video file here
         // Generate a thumbnail using FFmpeg
-        const thumbnailPath = `/tmp/thumbnail.jpg`;
+        const thumbnailPath = path.join(thumbnailsDir, `${key}-thumbnail.jpg`);
+        console.log('Generating thumbnail:', thumbnailPath);
         await new Promise((resolve, reject) => {
             ffmpeg(filePath)
               .screenshots({
-                  count: 1,
-                  folder: '/tmp',
-                  filename: 'thumbnail.jpg',
-                  size: '320x240'
+                    count: 1,
+                    folder: thumbnailsDir,
+                    filename: `${key}-thumbnail.jpg`,
+                    size: '320x240'
               })
               .on('end', resolve)
               .on('error', reject);
@@ -77,14 +76,17 @@ export const handler = async (event) => {
         console.log('Thumbnail generated successfully:', thumbnailPath);
 
                 // Upload thumbnail back to S3
-        const thumbnailUploadParams = {
-            Bucket: bucketName,
-            Key: `thumbnails/${key}-thumbnail.jpg`,
-            Body: fsPromises.readFile(thumbnailPath),
-            ContentType: 'image/jpeg'
-        };
+        const upload = new Upload({
+            client: s3Client,
+            params: {
+                Bucket: bucketName,
+                Key: `thumbnails/${key}-thumbnail.jpg`,
+                Body: await fsPromises.readFile(thumbnailPath),
+                ContentType: 'image/jpeg'
+            }
+        });
 
-        await s3Client.send(new PutObjectCommand(thumbnailUploadParams));
+        await upload.done();
         console.log('Thumbnail uploaded successfully to S3.');
 
         // Delete the video & the thumbnail from the local file system

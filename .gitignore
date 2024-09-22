@@ -28,4 +28,4 @@ commands.txt
 ffmpeg*
 
 # lambda zip files
-*.zip
+process-video-lambda.zip
