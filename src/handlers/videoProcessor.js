@@ -94,8 +94,7 @@ export const handler = async (event) => {
         await fsPromises.unlink(thumbnailPath);
 
         // Delete the video from S3
-        const deleteParams = { Bucket: bucketName, Key: key };
-        await s3Client.send(new DeleteObjectCommand(deleteParams));
+        await s3Client.send(new DeleteObjectCommand(params));
         console.log(`Video ${key} deleted successfully from S3.`);
 
     } catch (error) {
