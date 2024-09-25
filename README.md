@@ -103,7 +103,3 @@ vidforge/
 - Add support for multiple video processing options
 - Implement a web interface for uploading and managing videos
 - Add support for notifications (e.g. email) when processing is complete
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
